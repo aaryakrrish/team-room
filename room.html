@@ -1,0 +1,905 @@
+<title>Team Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  /* Layout: a dark ink rail of channels beside a calm reading column; Claude's turns sit on a warm card so they stand apart from people. */
+  :root {
+    --bg: #f7f8fa; --panel: #ffffff; --soft: #eef1f4; --text: #161b22; --muted: #5f6b78; --line: #dde2e8;
+    --rail: #121821; --rail-2: #1b2430; --rail-text: #aab4c0; --rail-strong: #ffffff;
+    --accent: #0f766e; --accent-ink: #ffffff; --accent-soft: #dff3f0;
+    --claude: #c4572f; --claude-soft: #fdf1ea; --claude-line: #f3d6c6;
+    --mention: #fff4c7; --mention-text: #6b4b00;
+    --online: #22c55e; --danger: #c0392b; --shadow: 0 1px 2px rgba(18,24,33,.06), 0 6px 24px rgba(18,24,33,.08);
+    --f-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+    --f-body: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1318; --panel: #151a21; --soft: #1c232c; --text: #e8ecf0; --muted: #93a0ad; --line: #27303b;
+      --rail: #0a0e13; --rail-2: #141b24; --rail-text: #94a0ad; --rail-strong: #ffffff;
+      --accent: #2bb3a5; --accent-ink: #06201d; --accent-soft: #123430;
+      --claude: #f0916b; --claude-soft: #2a1d17; --claude-line: #4a2f22;
+      --mention: #3d3416; --mention-text: #f5d777;
+      --online: #34d399; --danger: #f08070; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1318; --panel: #151a21; --soft: #1c232c; --text: #e8ecf0; --muted: #93a0ad; --line: #27303b;
+    --rail: #0a0e13; --rail-2: #141b24; --rail-text: #94a0ad; --rail-strong: #ffffff;
+    --accent: #2bb3a5; --accent-ink: #06201d; --accent-soft: #123430;
+    --claude: #f0916b; --claude-soft: #2a1d17; --claude-line: #4a2f22;
+    --mention: #3d3416; --mention-text: #f5d777;
+    --online: #34d399; --danger: #f08070; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: var(--f-body); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; }
+  button { font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #app { display: flex; height: 100%; }
+
+  /* Rail */
+  aside { width: 252px; flex: none; background: var(--rail); color: var(--rail-text); display: flex; flex-direction: column; padding: 18px 10px 14px; gap: 2px; }
+  .brand { display: flex; gap: 10px; align-items: center; padding: 0 8px 16px; }
+  .logo { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; color: var(--accent-ink); background: var(--accent); font-size: 16px; }
+  .brand-text { min-width: 0; }
+  .brand-name { font-family: var(--f-display); font-weight: 700; font-size: 17px; color: var(--rail-strong); letter-spacing: -.01em; line-height: 1.2; }
+  .brand-tag { font-size: 12px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sect { padding: 14px 10px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; opacity: .65; }
+  .ch { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; color: inherit; font-size: 14.5px; cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: background .15s, color .15s; }
+  .ch:hover { background: var(--rail-2); color: var(--rail-strong); }
+  .ch.active { background: var(--rail-2); color: var(--rail-strong); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
+  .ch .hash { opacity: .5; font-weight: 500; width: 12px; text-align: center; }
+  .ch .badge { margin-left: auto; background: var(--claude); color: #fff; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
+  .ch.has-unread:not(.active) { color: var(--rail-strong); font-weight: 700; }
+  .ch .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--online); margin-left: auto; display: none; }
+  .ch.has-ctx .dot { display: inline-block; }
+  .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: var(--rail-2); font-size: 13px; }
+  .me .av { width: 30px; height: 30px; font-size: 12px; }
+  .me-name { color: var(--rail-strong); font-weight: 600; line-height: 1.2; }
+  .me-sub { font-size: 12px; opacity: .8; display: flex; align-items: center; gap: 5px; }
+  .me-sub::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--online); }
+
+  /* Main */
+  main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--panel); }
+  header.top { padding: 14px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; }
+  .top-text { min-width: 0; flex: 1; }
+  header.top h1 { margin: 0; font-family: var(--f-display); font-size: 19px; font-weight: 700; letter-spacing: -.01em; }
+  header.top h1 .hash { color: var(--muted); font-weight: 500; margin-right: 2px; }
+  header.top .desc { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .here { display: flex; align-items: center; gap: 8px; flex: none; color: var(--muted); font-size: 12.5px; }
+  .stack { display: flex; }
+  .stack .av { width: 26px; height: 26px; font-size: 11px; border: 2px solid var(--panel); margin-left: -7px; }
+  .stack .av:first-child { margin-left: 0; }
+  #banner { padding: 8px 24px; font-size: 13px; background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+
+  #msgs { flex: 1; overflow-y: auto; padding: 10px 0 16px; }
+  .day { display: flex; align-items: center; gap: 12px; margin: 18px 24px 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
+  .day::before, .day::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .day span { padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
+  .msg { position: relative; display: flex; gap: 12px; padding: 4px 24px; }
+  .msg:hover { background: var(--bg); }
+  .msg.first { margin-top: 10px; }
+  .msg.fresh { animation: rise .25s ease-out; }
+  @keyframes rise { from { transform: translateY(6px); opacity: .4; } to { transform: none; opacity: 1; } }
+  .av { width: 38px; height: 38px; border-radius: 11px; flex: none; color: #fff; font-weight: 700; font-size: 15px; display: grid; place-items: center; font-family: var(--f-display); }
+  .av.ph { visibility: hidden; height: 0; }
+  .av.claude { background: var(--claude); }
+  .av.claude svg { width: 20px; height: 20px; }
+  .body { min-width: 0; flex: 1; }
+  .meta { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .who { font-weight: 700; }
+  .who.claude { color: var(--claude); }
+  .tag { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--claude); border: 1px solid var(--claude-line); border-radius: 5px; padding: 0 5px; }
+  .time { color: var(--muted); font-size: 11.5px; font-family: var(--f-mono); }
+  .pin-note { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 4px; }
+  .txt { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .txt code { background: var(--soft); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; font-size: 13px; font-family: var(--f-mono); }
+  .txt a { color: var(--accent); }
+  .txt .at { background: var(--mention); color: var(--mention-text); border-radius: 5px; padding: 0 3px; font-weight: 600; }
+  .msg.claude-msg .body { background: var(--claude-soft); border: 1px solid var(--claude-line); border-radius: 12px; padding: 8px 12px 10px; }
+  .msg.claude-msg:hover { background: none; }
+  .reacts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .react { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 1px 9px 1px 7px; font-size: 13px; cursor: pointer; color: var(--text); }
+  .react b { font-weight: 600; font-size: 12px; color: var(--muted); }
+  .react.mine { border-color: var(--accent); background: var(--accent-soft); }
+  .react.mine b { color: var(--accent); }
+  .react:hover { border-color: var(--muted); }
+  .atts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .att { position: relative; }
+  .att-img { display: block; max-width: min(320px, 100%); max-height: 240px; border-radius: 10px; border: 1px solid var(--line); background: var(--soft); }
+  .att-img img { display: block; max-width: 100%; max-height: 238px; border-radius: 9px; }
+  .att-file { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--panel); color: var(--text); text-decoration: none; max-width: 300px; }
+  .att-file:hover { border-color: var(--accent); }
+  .att-file .ext { width: 34px; height: 34px; border-radius: 8px; flex: none; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font: 600 10.5px var(--f-mono); text-transform: uppercase; }
+  .att-file .nm { min-width: 0; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att-file .sz { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .att-x { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 13px; line-height: 1; cursor: pointer; display: none; box-shadow: var(--shadow); }
+  .att:hover .att-x, .att-x:focus-visible { display: grid; place-items: center; }
+  .att-x:hover { color: var(--danger); }
+  @media (hover: none) { .att-x { display: grid; place-items: center; } }
+  .pending { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px 0; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--bg); border-radius: 9px; padding: 4px 6px 4px 4px; font-size: 12.5px; max-width: 220px; }
+  .chip .th { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; flex: none; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font: 600 9px var(--f-mono); text-transform: uppercase; }
+  .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 0 4px; border-radius: 5px; }
+  .chip button:hover { color: var(--danger); background: var(--soft); }
+  .box.drop { border-color: var(--accent); background: var(--accent-soft); }
+  .av { overflow: hidden; }
+  .av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .me { border: 0; color: inherit; text-align: left; cursor: pointer; width: 100%; font: inherit; font-size: 13px; }
+  .me:hover { background: #222d3b; }
+  .me:disabled { cursor: default; }
+  .me-sub.photo::before { display: none; }
+  .emoji-wrap { position: relative; }
+  .btn.icon { padding: 6px 9px; font-size: 16px; line-height: 1; }
+  .emoji-pop { position: absolute; bottom: calc(100% + 8px); right: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 8px; display: grid; grid-template-columns: repeat(8, 34px); gap: 2px; z-index: 5; }
+  .emoji-pop button { border: 0; background: none; font-size: 20px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; }
+  .emoji-pop button:hover { background: var(--soft); }
+  @media (max-width: 420px) { .emoji-pop { grid-template-columns: repeat(6, 34px); } }
+  .actions { position: absolute; right: 20px; top: -14px; display: none; gap: 1px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px; box-shadow: var(--shadow); z-index: 2; }
+  .msg:hover .actions, .msg:focus-within .actions { display: flex; }
+  .actions button { border: 0; background: none; cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 4px 8px; border-radius: 7px; white-space: nowrap; }
+  .actions button.emo { font-size: 15px; padding: 2px 6px; }
+  .actions button:hover { background: var(--soft); color: var(--text); }
+  .actions button.del:hover { color: var(--danger); }
+  .actions .sep { width: 1px; background: var(--line); margin: 3px 2px; }
+  @media (hover: none) { .actions { position: static; display: flex; flex-wrap: wrap; background: none; border: 0; box-shadow: none; padding: 0; margin-top: 4px; } .msg { flex-wrap: wrap; } .actions { width: 100%; padding-left: 50px; } }
+
+  .welcome { margin: 40px auto 10px; max-width: 520px; padding: 0 24px; text-align: center; }
+  .welcome h2 { font-family: var(--f-display); font-size: 24px; margin: 12px 0 6px; letter-spacing: -.015em; text-wrap: balance; }
+  .welcome p { color: var(--muted); margin: 0 0 18px; }
+  .welcome .av { margin: 0 auto; width: 52px; height: 52px; border-radius: 15px; }
+  .welcome .av svg { width: 26px; height: 26px; }
+  .starters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .starter { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 999px; padding: 7px 14px; font-size: 13.5px; cursor: pointer; transition: border-color .15s, background .15s; }
+  .starter:hover { border-color: var(--claude); background: var(--claude-soft); }
+  .loading, .empty { margin: 48px 24px; color: var(--muted); text-align: center; }
+  .notice { margin: 8px 24px; padding: 9px 14px; border-radius: 10px; background: var(--soft); color: var(--muted); font-size: 13px; }
+  .dots { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 4px; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .4; animation: blink 1.2s infinite; }
+  .dots i:nth-child(2) { animation-delay: .2s; } .dots i:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+  footer.comp { padding: 0 24px 16px; }
+  .typing { height: 20px; font-size: 12.5px; color: var(--muted); padding: 0 4px 2px; display: flex; align-items: center; }
+  .box { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); transition: border-color .15s; }
+  .box:focus-within { border-color: var(--accent); }
+  textarea { width: 100%; border: 0; outline: 0; resize: none; background: transparent; color: var(--text); font: inherit; padding: 12px 14px 4px; max-height: 180px; display: block; }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px 8px 12px; }
+  .bar .hint { color: var(--muted); font-size: 12px; margin-right: auto; }
+  .bar kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 9px; padding: 7px 13px; cursor: pointer; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background .15s, border-color .15s; }
+  .btn:hover { background: var(--soft); }
+  .btn.ask { color: var(--claude); border-color: var(--claude-line); background: var(--claude-soft); }
+  .btn.ask svg { width: 14px; height: 14px; }
+  .btn.send { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.send:hover { filter: brightness(1.08); }
+  .btn:disabled, textarea:disabled { opacity: .5; cursor: not-allowed; }
+
+  #ctxModal { position: fixed; inset: 0; background: rgba(10,14,19,.5); z-index: 10; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal { background: var(--panel); color: var(--text); border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column; padding: 22px; box-shadow: var(--shadow); }
+  .modal h2 { margin: 0 0 4px; font-family: var(--f-display); font-size: 20px; }
+  .modal p { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; }
+  .modal textarea { border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-height: 280px; max-height: none; flex: 1; resize: vertical; font-size: 14px; background: var(--bg); }
+  .modal .row { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .modal .row .info { margin-right: auto; color: var(--muted); font-size: 12px; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  @media (max-width: 720px) {
+    #app { flex-direction: column; }
+    aside { width: 100%; flex-direction: row; align-items: center; padding: 8px 16px; overflow-x: auto; white-space: nowrap; gap: 4px; }
+    #chs { display: flex; gap: 2px; }
+    .brand { padding: 0 6px 0 0; }
+    .brand-text, .sect { display: none; }
+    .me { margin: 0 0 0 auto; width: auto; padding: 0; background: none; flex: none; }
+    .me > div:last-child { display: none; }
+    .logo { width: 30px; height: 30px; }
+    .ch { width: auto; }
+    .ch.active { box-shadow: inset 0 -2px 0 var(--accent); }
+    header.top { padding: 10px 16px; }
+    .msg { padding: 4px 16px; }
+    .day, .notice { margin-left: 16px; margin-right: 16px; }
+    footer.comp { padding: 0 16px 12px; }
+    .bar .hint { display: none; }
+    .here .count { display: none; }
+  }
+</style>
+
+<div id="app">
+  <aside>
+    <div class="brand"><div class="logo" id="logo"></div><div class="brand-text"><div class="brand-name" id="roomName"></div><div class="brand-tag" id="roomTag"></div></div></div>
+    <div class="sect">Channels</div>
+    <nav id="chs"></nav>
+    <div class="sect">Shared</div>
+    <button class="ch" id="ctxBtn" type="button"><span class="hash">&#9783;</span><span id="ctxLabel"></span><span class="dot"></span></button>
+    <button class="me" id="me" type="button" hidden><div class="av" id="meAv"></div><div><div class="me-name" id="meName"></div><div class="me-sub" id="meSub">Online</div></div></button>
+    <input type="file" id="photoInput" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+  </aside>
+  <div id="ctxModal" role="dialog" aria-modal="true" aria-labelledby="ctxTitle" hidden>
+    <div class="modal">
+      <h2 id="ctxTitle"></h2>
+      <p id="ctxHint"></p>
+      <textarea id="ctxText" maxlength="20000"></textarea>
+      <div class="row">
+        <span class="info" id="ctxInfo"></span>
+        <button class="btn" id="ctxCancel" type="button">Close</button>
+        <button class="btn send" id="ctxSave" type="button">Save notes</button>
+      </div>
+    </div>
+  </div>
+  <main>
+    <header class="top">
+      <div class="top-text"><h1 id="title"></h1><div class="desc" id="desc"></div></div>
+      <div class="here" id="here" hidden><div class="stack" id="stack"></div><span class="count" id="hereCount"></span></div>
+    </header>
+    <div id="banner" hidden></div>
+    <div id="msgs" aria-live="polite"></div>
+    <footer class="comp">
+      <div class="typing" id="typing"></div>
+      <div class="box" id="box">
+        <div class="pending" id="pending" hidden></div>
+        <textarea id="input" rows="1"></textarea>
+        <div class="bar">
+          <span class="hint"><kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line</span>
+          <button class="btn icon" id="attachBtn" type="button" aria-label="Attach files or pictures" title="Attach files or pictures" hidden>&#128206;</button>
+          <input type="file" id="fileInput" multiple accept="image/*,video/*,application/pdf,text/plain,text/csv,text/markdown,application/json,.md,.csv,.txt,.json" hidden>
+          <div class="emoji-wrap"><button class="btn icon" id="emojiBtn" type="button" aria-label="Add a smiley" aria-expanded="false">&#128578;</button><div class="emoji-pop" id="emojiPop" hidden></div></div>
+          <button class="btn ask" id="ask" type="button"></button>
+          <button class="btn send" id="send" type="button">Send</button>
+        </div>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<script>
+/* ROOM CONFIG: the only part to change for a new room. Channel ids are short: lowercase letters, digits, dashes. */
+var ROOM = {
+  name: 'Team Room',
+  tagline: 'Our shared space with Claude.',
+  about: 'A small team working together.',
+  channels: [
+    { id: 'general',   name: 'general',   desc: 'Day-to-day chat' },
+    { id: 'ideas',     name: 'ideas',     desc: 'Ideas and plans' },
+    { id: 'decisions', name: 'decisions', desc: 'Pinned decisions and things we agreed' }
+  ],
+  pinChannel: 'decisions',
+  notesLabel: 'Shared notes',
+  notesHint: 'Notes everyone here can edit. Claude reads them every time someone mentions @claude, so keep them to facts about the work: what you are doing, what is done, what is next, key decisions. No private details.',
+  starters: [
+    '@claude catch me up on this channel',
+    '@claude what have we decided so far?',
+    '@claude help us plan this week'
+  ]
+};
+/* END ROOM CONFIG */
+
+(function () {
+  var CHANNELS = ROOM.channels, LIMIT = 150;
+  var REACTIONS = [['up', '\u{1F44D}'], ['heart', '❤️'], ['laugh', '\u{1F602}'], ['party', '\u{1F389}'], ['eyes', '\u{1F440}'], ['done', '✅']];
+  var SMILIES = ['😀','😄','😂','🙂','😊','😍','🥳','😎','🤔','😅','😬','😢','😮','🙌','👏','👍','👎','🙏','💪','🔥','✨','🎉','❤️','✅','👀','💡','🚀','📌','☕','🤝','💯','⏰'];
+  var PIN = CHANNELS.some(function (c) { return c.id === ROOM.pinChannel; }) ? ROOM.pinChannel : '';
+  var SEEN_KEY = 'room_seen_' + ROOM.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  var SPARK = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5v.1c-4.6.5-7 2.9-7.5 7.5h-.1c-.5-4.6-2.9-7-7.5-7.5V10c4.6-.5 7-2.9 7.5-7.5Z"/><path d="M19 15.5c.2 1.8 1.1 2.7 2.9 2.9-1.8.2-2.7 1.1-2.9 2.9-.2-1.8-1.1-2.7-2.9-2.9 1.8-.2 2.7-1.1 2.9-2.9Z" opacity=".7"/></svg>';
+  var state = { db: null, user: null, room: null, myId: null, canWrite: true, names: {}, msgs: {}, loaded: {}, cur: CHANNELS[0].id,
+    seen: {}, thinking: null, partial: '', notice: '', stickBottom: true, ctx: '', ctxBy: '', ctxTs: 0, peers: [], fresh: {}, typingTimer: null,
+    assets: null, avatars: {}, broken: {}, pending: [], sending: false };
+  var MAX_FILE = 20 * 1024 * 1024, MAX_FILES = 6;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var elChs = $('chs'), elMsgs = $('msgs'), elInput = $('input'), elSend = $('send'), elAsk = $('ask');
+  $('roomName').textContent = ROOM.name; $('roomTag').textContent = ROOM.tagline;
+  $('logo').textContent = (ROOM.name.trim().charAt(0) || 'R').toUpperCase();
+  $('ctxLabel').textContent = ROOM.notesLabel; $('ctxTitle').textContent = ROOM.notesLabel; $('ctxHint').textContent = ROOM.notesHint;
+  elAsk.innerHTML = SPARK + '<span>Ask Claude</span>';
+
+  function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function chById(id) { for (var i = 0; i < CHANNELS.length; i++) if (CHANNELS[i].id === id) return CHANNELS[i]; return CHANNELS[0]; }
+  function path(id) { return 'channels/' + id + '/messages'; }
+
+  try { state.seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}') || {}; } catch (e) { state.seen = {}; }
+  function saveSeen() { try { localStorage.setItem(SEEN_KEY, JSON.stringify(state.seen)); } catch (e) {} }
+
+  function hue(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
+  function nameOf(uid) {
+    if (uid === 'claude') return 'Claude';
+    if (uid === state.myId) return state.names[uid] || 'You';
+    return state.names[uid] || 'Someone';
+  }
+  function avatar(uid, cls) {
+    var a = mk('div', 'av' + (cls ? ' ' + cls : ''));
+    if (uid === 'claude') { a.classList.add('claude'); a.innerHTML = SPARK; }
+    else {
+      a.textContent = (nameOf(uid).trim().charAt(0) || '?').toUpperCase(); a.style.background = 'hsl(' + hue(uid) + ',42%,44%)';
+      var pic = state.avatars[uid];
+      if (pic && !state.broken[pic]) {
+        var img = new Image(); img.alt = ''; img.src = '/_blob/' + pic;
+        img.onload = function () { a.textContent = ''; a.appendChild(img); };
+        img.onerror = function () { state.broken[pic] = 1; };
+      }
+    }
+    a.title = nameOf(uid);
+    return a;
+  }
+
+  function richText(parent, text) {
+    String(text).split('\n').forEach(function (line, li) {
+      if (li > 0) parent.appendChild(document.createTextNode('\n'));
+      var re = /(\*\*[^*\n]+\*\*|`[^`\n]+`|https?:\/\/[^\s<]+|@claude\b)/gi, last = 0, m;
+      while ((m = re.exec(line)) !== null) {
+        if (m.index > last) parent.appendChild(document.createTextNode(line.slice(last, m.index)));
+        var tok = m[0];
+        if (tok.indexOf('**') === 0) parent.appendChild(mk('strong', '', tok.slice(2, -2)));
+        else if (tok.charAt(0) === '`') parent.appendChild(mk('code', '', tok.slice(1, -1)));
+        else if (tok.charAt(0) === '@') parent.appendChild(mk('span', 'at', tok));
+        else { var a = mk('a', '', tok); a.href = tok; a.target = '_blank'; a.rel = 'noopener noreferrer'; parent.appendChild(a); }
+        last = m.index + tok.length;
+      }
+      if (last < line.length) parent.appendChild(document.createTextNode(line.slice(last)));
+    });
+  }
+
+  function fmtTime(ts) { return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+  function fmtDay(ts) {
+    var d = new Date(ts), t = new Date(), y = new Date(); y.setDate(t.getDate() - 1);
+    if (d.toDateString() === t.toDateString()) return 'Today';
+    if (d.toDateString() === y.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  function unreadCount(chId) {
+    var list = state.msgs[chId] || [], s = state.seen[chId] || 0, n = 0;
+    for (var i = 0; i < list.length; i++) if (list[i].ts > s && list[i].uid !== state.myId) n++;
+    return n;
+  }
+  function markSeen(chId) {
+    var list = state.msgs[chId] || [];
+    if (!list.length) return;
+    var latest = list[list.length - 1].ts;
+    if ((state.seen[chId] || 0) < latest) { state.seen[chId] = latest; saveSeen(); }
+  }
+
+  function renderChannels() {
+    elChs.textContent = '';
+    var total = 0;
+    CHANNELS.forEach(function (c) {
+      var n = c.id === state.cur ? 0 : unreadCount(c.id);
+      total += n;
+      var b = mk('button', 'ch' + (c.id === state.cur ? ' active' : '') + (n ? ' has-unread' : ''));
+      b.type = 'button';
+      b.appendChild(mk('span', 'hash', '#'));
+      b.appendChild(mk('span', '', c.name));
+      if (n) b.appendChild(mk('span', 'badge', n > 99 ? '99+' : String(n)));
+      b.addEventListener('click', function () { switchTo(c.id); });
+      elChs.appendChild(b);
+    });
+    document.title = (total ? '(' + total + ') ' : '') + ROOM.name;
+  }
+
+  function useStarter(t) { elInput.value = t; autosize(); elInput.focus(); }
+
+  function renderWelcome(c) {
+    var w = mk('div', 'welcome');
+    w.appendChild(avatar('claude'));
+    w.appendChild(mk('h2', '', 'Welcome to #' + c.name));
+    w.appendChild(mk('p', '', c.desc + '. Say hello, or mention @claude to bring Claude into the conversation.'));
+    var s = mk('div', 'starters');
+    (ROOM.starters || []).forEach(function (t) {
+      var b = mk('button', 'starter', t); b.type = 'button';
+      b.addEventListener('click', function () { useStarter(t); });
+      s.appendChild(b);
+    });
+    w.appendChild(s);
+    elMsgs.appendChild(w);
+  }
+
+  function reactionRow(m) {
+    var r = m.reactions || {}, row = mk('div', 'reacts'), any = false;
+    REACTIONS.forEach(function (pair) {
+      var ids = Array.isArray(r[pair[0]]) ? r[pair[0]] : [];
+      if (!ids.length) return;
+      any = true;
+      var mine = ids.indexOf(state.myId) !== -1;
+      var b = mk('button', 'react' + (mine ? ' mine' : '')); b.type = 'button';
+      b.appendChild(document.createTextNode(pair[1]));
+      b.appendChild(mk('b', '', String(ids.length)));
+      b.title = ids.map(nameOf).join(', ');
+      b.title = ids.map(nameOf).join(', ') + (mine ? '. Click to remove yours.' : '');
+      b.disabled = !state.canWrite;
+      b.addEventListener('click', function () { toggleReact(m, pair[0]); });
+      row.appendChild(b);
+    });
+    return any ? row : null;
+  }
+
+  function fmtSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function extOf(name) { var m = /\.([a-z0-9]{1,5})$/i.exec(name || ''); return m ? m[1] : 'file'; }
+
+  function fileCard(a, href) {
+    var f = mk(href ? 'a' : 'div', 'att-file');
+    if (href) { f.href = href; f.target = '_blank'; f.rel = 'noopener noreferrer'; }
+    f.appendChild(mk('span', 'ext', extOf(a.name)));
+    var info = mk('span', 'nm', a.name || 'File');
+    if (a.size) { info.appendChild(document.createElement('br')); info.appendChild(mk('span', 'sz', fmtSize(a.size))); }
+    f.appendChild(info);
+    return f;
+  }
+
+  function attachmentRow(m) {
+    if (!m.attachments.length) return null;
+    var row = mk('div', 'atts');
+    m.attachments.forEach(function (a) {
+      var wrap = mk('div', 'att'), href = '/_blob/' + a.id;
+      if (/^image\//.test(a.type) && !state.broken[a.id]) {
+        var link = mk('a', 'att-img'); link.href = href; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.title = a.name || 'Picture';
+        var img = new Image(); img.alt = a.name || 'Picture'; img.loading = 'lazy'; img.src = href;
+        img.onerror = function () { state.broken[a.id] = 1; link.replaceWith(fileCard({ name: (a.name || 'Picture') + ' (not available here)', size: 0 })); };
+        link.appendChild(img); wrap.appendChild(link);
+      } else wrap.appendChild(fileCard(a, href));
+      if (m.uid === state.myId && state.canWrite) {
+        var x = mk('button', 'att-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Remove ' + (a.name || 'attachment'));
+        x.addEventListener('click', function () { removeAttachment(m, a.id); });
+        wrap.appendChild(x);
+      }
+      row.appendChild(wrap);
+    });
+    return row;
+  }
+
+  function renderPending() {
+    var p = $('pending'); p.textContent = ''; p.hidden = !state.pending.length;
+    state.pending.forEach(function (item, i) {
+      var c = mk('div', 'chip');
+      if (item.preview) { var im = new Image(); im.className = 'th'; im.src = item.preview; im.alt = ''; c.appendChild(im); }
+      else c.appendChild(mk('span', 'th', extOf(item.file.name)));
+      c.appendChild(mk('span', '', item.file.name || 'Pasted picture'));
+      var x = mk('button', '', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Remove ' + (item.file.name || 'file'));
+      x.addEventListener('click', function () { if (item.preview) URL.revokeObjectURL(item.preview); state.pending.splice(i, 1); renderPending(); });
+      c.appendChild(x); p.appendChild(c);
+    });
+  }
+
+  function addFiles(files) {
+    if (!state.assets || !state.canWrite) return;
+    var skipped = [];
+    Array.prototype.forEach.call(files, function (f) {
+      if (state.pending.length >= MAX_FILES) { skipped.push(f.name + ' (' + MAX_FILES + ' files at a time)'); return; }
+      if (f.size > MAX_FILE) { skipped.push(f.name + ' (over 20 MB)'); return; }
+      state.pending.push({ file: f, preview: /^image\//.test(f.type) ? URL.createObjectURL(f) : '' });
+    });
+    if (skipped.length) { state.notice = 'Not attached: ' + skipped.join(', ') + '.'; renderMessages(); }
+    renderPending(); elInput.focus();
+  }
+
+  function renderMessages() {
+    var c = chById(state.cur);
+    $('title').innerHTML = ''; $('title').appendChild(mk('span', 'hash', '#')); $('title').appendChild(document.createTextNode(c.name));
+    $('desc').textContent = c.desc;
+    elInput.placeholder = 'Message #' + c.name;
+    var list = state.msgs[state.cur] || [];
+    elMsgs.textContent = '';
+
+    if (!state.db) { elMsgs.appendChild(mk('div', 'empty', 'Open this room while signed in to Claude to read and post messages.')); return; }
+    if (!state.loaded[state.cur]) elMsgs.appendChild(mk('div', 'loading', 'Loading messages...'));
+    else if (!list.length && !state.thinking) renderWelcome(c);
+
+    var prev = null, prevDay = '';
+    list.forEach(function (m) {
+      var day = new Date(m.ts).toDateString();
+      if (day !== prevDay) { var dv = mk('div', 'day'); dv.appendChild(mk('span', '', fmtDay(m.ts))); elMsgs.appendChild(dv); prevDay = day; prev = null; }
+      var grouped = prev && prev.uid === m.uid && (m.ts - prev.ts) < 300000 && !m.pinnedFrom && !prev.pinnedFrom;
+      var isClaude = m.uid === 'claude';
+      var row = mk('div', 'msg' + (grouped ? '' : ' first') + (isClaude ? ' claude-msg' : '') + (state.fresh[m.id] ? ' fresh' : ''));
+      row.appendChild(grouped ? mk('div', 'av ph') : avatar(m.uid));
+      var body = mk('div', 'body');
+      if (!grouped) {
+        var meta = mk('div', 'meta');
+        meta.appendChild(mk('span', 'who' + (isClaude ? ' claude' : ''), nameOf(m.uid)));
+        if (isClaude) meta.appendChild(mk('span', 'tag', 'AI'));
+        meta.appendChild(mk('span', 'time', fmtTime(m.ts)));
+        body.appendChild(meta);
+      }
+      if (m.pinnedFrom) body.appendChild(mk('div', 'pin-note', '\u{1F4CC} Pinned from #' + chById(m.pinnedFrom).name));
+      if (m.text) { var t = mk('div', 'txt'); richText(t, m.text); body.appendChild(t); }
+      var at = attachmentRow(m); if (at) body.appendChild(at);
+      var rr = reactionRow(m); if (rr) body.appendChild(rr);
+      row.appendChild(body);
+
+      var act = mk('div', 'actions');
+      if (state.canWrite) {
+        REACTIONS.forEach(function (pair) {
+          var e = mk('button', 'emo', pair[1]); e.type = 'button'; e.setAttribute('aria-label', 'React ' + pair[0]);
+          e.addEventListener('click', function () { toggleReact(m, pair[0]); });
+          act.appendChild(e);
+        });
+        act.appendChild(mk('span', 'sep'));
+      }
+      var cp = mk('button', '', 'Copy'); cp.type = 'button';
+      cp.addEventListener('click', function () { copyText(m.text, cp); });
+      act.appendChild(cp);
+      if (PIN && state.cur !== PIN && state.canWrite) {
+        var p = mk('button', '', 'Pin'); p.type = 'button'; p.title = 'Pin to #' + chById(PIN).name;
+        p.addEventListener('click', function () { pin(m); });
+        act.appendChild(p);
+      }
+      if (m.uid === state.myId && state.canWrite) {
+        var d = mk('button', 'del', 'Delete'); d.type = 'button';
+        d.addEventListener('click', function () { del(m); });
+        act.appendChild(d);
+      }
+      row.appendChild(act);
+      elMsgs.appendChild(row);
+      prev = m;
+    });
+
+    if (state.thinking === state.cur) {
+      var r = mk('div', 'msg first claude-msg');
+      r.appendChild(avatar('claude'));
+      var b = mk('div', 'body'), mt = mk('div', 'meta');
+      mt.appendChild(mk('span', 'who claude', 'Claude')); mt.appendChild(mk('span', 'tag', 'AI')); b.appendChild(mt);
+      var tx = mk('div', 'txt');
+      if (state.partial) richText(tx, state.partial);
+      else { tx.appendChild(document.createTextNode('Thinking')); var dd = mk('span', 'dots'); dd.innerHTML = '<i></i><i></i><i></i>'; tx.appendChild(dd); }
+      b.appendChild(tx); r.appendChild(b); elMsgs.appendChild(r);
+    }
+    if (state.notice) elMsgs.appendChild(mk('div', 'notice', state.notice));
+    state.fresh = {};
+    if (state.stickBottom) elMsgs.scrollTop = elMsgs.scrollHeight;
+  }
+
+  function renderHere() {
+    var seen = {}, people = [];
+    state.peers.forEach(function (p) { if (p.kind === 'viewer' && p.by && !seen[p.by]) { seen[p.by] = 1; people.push(p.by); } });
+    var here = $('here');
+    here.hidden = !people.length;
+    var st = $('stack'); st.textContent = '';
+    people.slice(0, 5).forEach(function (id) { st.appendChild(avatar(id)); });
+    $('hereCount').textContent = people.length === 1 ? 'Just you here' : people.length + ' here now';
+    var typers = [];
+    state.peers.forEach(function (p) {
+      var pr = p.presence || {};
+      if (!p.isMe && p.by && pr.typing === state.cur && typeof pr.at === 'number' && Date.now() - pr.at < 8000 && typers.indexOf(p.by) === -1) typers.push(p.by);
+    });
+    var ty = $('typing'); ty.textContent = '';
+    if (typers.length) {
+      ty.appendChild(document.createTextNode((typers.length === 1 ? nameOf(typers[0]) + ' is' : typers.length + ' people are') + ' typing'));
+      var dd = mk('span', 'dots'); dd.innerHTML = '<i></i><i></i><i></i>'; ty.appendChild(dd);
+    }
+    resolveNames(people);
+  }
+
+  function renderMe() {
+    if (!state.myId) return;
+    $('me').hidden = false;
+    var a = avatar(state.myId); $('meAv').replaceWith(a); a.id = 'meAv';
+    $('meName').textContent = state.names[state.myId] || 'You';
+    var canPhoto = !!state.assets && state.canWrite;
+    $('me').disabled = !canPhoto;
+    $('me').title = canPhoto ? (state.avatars[state.myId] ? 'Change your photo' : 'Add your photo') : '';
+    $('meSub').textContent = canPhoto ? (state.avatars[state.myId] ? 'Change photo' : 'Add a photo') : 'Online';
+    $('meSub').classList.toggle('photo', canPhoto);
+  }
+
+  /* Profile photos: each person writes only profiles/<their id>; the photo itself is an uploaded asset. */
+  function subscribeProfiles() {
+    state.db.collection('profiles').onSnapshot(function (snap) {
+      var next = {};
+      snap.docs.forEach(function (d) {
+        var x = d.data() || {};
+        if (typeof x.avatar === 'string' && /^[0-9a-f]{32}$/.test(x.avatar)) next[d.id] = x.avatar;
+      });
+      state.avatars = next;
+      renderAll(); renderMe(); renderHere();
+    }, function () {});
+  }
+
+  function squareImage(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var s = Math.min(img.width, img.height), c = document.createElement('canvas');
+        c.width = c.height = 256;
+        c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 256, 256);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { b ? resolve(b) : reject(new Error('encode')); }, 'image/jpeg', 0.88);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('read')); };
+      img.src = url;
+    });
+  }
+
+  async function setPhoto(file) {
+    if (!file || !state.assets || !state.db) return;
+    $('meSub').textContent = 'Uploading...';
+    try {
+      var blob = await squareImage(file);
+      var res = await state.assets.upload(blob);
+      var old = state.avatars[state.myId];
+      await state.db.doc('profiles/' + state.myId).set({ avatar: res.id, ts: Date.now() });
+      if (old && old !== res.id) { try { await state.assets.delete(old); } catch (e) {} }
+      state.notice = 'Photo saved. Everyone in the room sees it next to your messages.';
+    } catch (e) {
+      state.notice = e && e.message === 'read' ? 'That file is not an image this browser can open. Try a JPG or PNG.'
+        : 'Could not save your photo' + (e && e.code ? ' (' + e.code + ')' : '') + '. Try again.';
+    }
+    renderMessages(); renderMe();
+  }
+  $('me').addEventListener('click', function () { if (!$('me').disabled) $('photoInput').click(); });
+  $('photoInput').addEventListener('change', function () { var f = this.files && this.files[0]; this.value = ''; setPhoto(f); });
+
+  /* Smiley picker for the message box */
+  var pop = $('emojiPop');
+  SMILIES.forEach(function (e) {
+    var b = mk('button', '', e); b.type = 'button'; b.setAttribute('aria-label', 'Insert ' + e);
+    b.addEventListener('click', function () {
+      var s = elInput.selectionStart || elInput.value.length, t = elInput.selectionEnd || s;
+      elInput.value = elInput.value.slice(0, s) + e + elInput.value.slice(t);
+      elInput.focus(); elInput.selectionStart = elInput.selectionEnd = s + e.length; autosize();
+    });
+    pop.appendChild(b);
+  });
+  function togglePop(open) { pop.hidden = !open; $('emojiBtn').setAttribute('aria-expanded', open ? 'true' : 'false'); }
+  $('emojiBtn').addEventListener('click', function (ev) { ev.stopPropagation(); togglePop(pop.hidden); });
+  document.addEventListener('click', function (ev) { if (!pop.hidden && !pop.contains(ev.target)) togglePop(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') togglePop(false); });
+
+  function renderAll() {
+    renderChannels(); renderMessages();
+    var canType = !!state.db && state.canWrite;
+    elInput.disabled = !canType; elSend.disabled = !canType; elAsk.disabled = !canType; $('emojiBtn').disabled = !canType;
+    if (state.db && !state.canWrite) setBanner('You can read this room but not post in it.');
+  }
+  function setBanner(t) { var b = $('banner'); b.textContent = t || ''; b.hidden = !t; }
+
+  function switchTo(id) {
+    state.cur = id; state.stickBottom = true; state.notice = '';
+    markSeen(id); renderAll(); renderHere();
+    if (window.matchMedia && !window.matchMedia('(max-width: 720px)').matches) elInput.focus();
+  }
+  elMsgs.addEventListener('scroll', function () { state.stickBottom = elMsgs.scrollTop + elMsgs.clientHeight >= elMsgs.scrollHeight - 80; });
+
+  async function resolveNames(ids) {
+    if (!state.user) return;
+    var need = ids.filter(function (id) { return id && id !== 'claude' && !state.names[id]; });
+    if (!need.length) return;
+    need.forEach(function (id) { state.names[id] = state.names[id] || ''; });
+    try {
+      var ps = await state.user.profiles(need), changed = false;
+      need.forEach(function (id) { var n = ps && ps[id] && ps[id].name; if (n) { state.names[id] = n; changed = true; } });
+      if (changed) { renderChannels(); renderMessages(); renderMe(); renderHere(); fillCtxInfo(); }
+    } catch (e) {}
+  }
+
+  function subscribe(ch) {
+    var timer = setTimeout(function () { if (!state.loaded[ch.id]) setBanner('Still connecting. Messages may be out of date.'); }, 10000);
+    var first = true;
+    state.db.collection(path(ch.id)).orderBy('ts', 'desc').limit(LIMIT).onSnapshot(function (snap) {
+      var arr = [], old = {};
+      (state.msgs[ch.id] || []).forEach(function (m) { old[m.id] = 1; });
+      snap.docs.forEach(function (d) {
+        var x = d.data() || {};
+        if (typeof x.ts !== 'number') return;
+        if (!first && !old[d.id]) state.fresh[d.id] = 1;
+        var atts = Array.isArray(x.attachments) ? x.attachments.filter(function (a) { return a && typeof a.id === 'string' && /^[0-9a-f]{32}$/.test(a.id); })
+          .map(function (a) { return { id: a.id, name: String(a.name || '').slice(0, 200), type: String(a.type || ''), size: typeof a.size === 'number' ? a.size : 0 }; }) : [];
+        arr.push({ id: d.id, uid: String(x.uid || ''), text: String(x.text || ''), ts: x.ts, pinnedFrom: x.pinnedFrom || '', attachments: atts, reactions: x.reactions && typeof x.reactions === 'object' ? x.reactions : {} });
+      });
+      first = false;
+      arr.reverse();
+      state.msgs[ch.id] = arr;
+      state.loaded[ch.id] = true;
+      if (!snap.metadata.fromCache) { clearTimeout(timer); if (state.canWrite) setBanner(''); }
+      if (ch.id === state.cur) markSeen(ch.id);
+      renderAll();
+      var ids = []; arr.forEach(function (m) { ids.push(m.uid); Object.keys(m.reactions).forEach(function (k) { if (Array.isArray(m.reactions[k])) ids = ids.concat(m.reactions[k]); }); });
+      resolveNames(ids);
+    }, function (err) {
+      clearTimeout(timer);
+      setBanner('Could not load #' + ch.name + (err && err.code ? ' (' + err.code + ')' : '') + '. Reload the page to try again.');
+    });
+  }
+
+  async function addMsg(chId, data) {
+    var doc = { uid: data.uid, text: data.text, ts: Date.now() };
+    if (data.pinnedFrom) doc.pinnedFrom = data.pinnedFrom;
+    if (data.attachments && data.attachments.length) doc.attachments = data.attachments;
+    await state.db.collection(path(chId)).add(doc);
+  }
+
+  /* A reaction toggles: click to add yours, click again to remove it. */
+  async function toggleReact(m, key) {
+    if (!state.db || !state.canWrite || !state.myId) return;
+    var r = {};
+    Object.keys(m.reactions || {}).forEach(function (k) { if (Array.isArray(m.reactions[k])) r[k] = m.reactions[k].slice(); });
+    var ids = r[key] || [], i = ids.indexOf(state.myId);
+    if (i === -1) ids.push(state.myId); else ids.splice(i, 1);
+    if (ids.length) r[key] = ids; else delete r[key];
+    try { await state.db.doc(path(state.cur) + '/' + m.id).update({ reactions: r }); }
+    catch (e) { state.notice = 'Could not change that reaction.'; renderMessages(); }
+  }
+
+  async function removeAttachment(m, id) {
+    var left = m.attachments.filter(function (a) { return a.id !== id; });
+    try {
+      if (!left.length && !m.text) await state.db.doc(path(state.cur) + '/' + m.id).delete();
+      else await state.db.doc(path(state.cur) + '/' + m.id).update({ attachments: left });
+      if (state.assets) { try { await state.assets.delete(id); } catch (e) {} }
+    } catch (e) { state.notice = 'Could not remove that file.'; renderMessages(); }
+  }
+
+  function copyText(text, btn) {
+    var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1400); };
+    try { navigator.clipboard.writeText(text).then(done, function () { state.notice = 'Copying is blocked here. Select the text instead.'; renderMessages(); }); }
+    catch (e) { state.notice = 'Copying is blocked here. Select the text instead.'; renderMessages(); }
+  }
+
+  function setTyping(on) {
+    if (!state.room) return;
+    try { state.room.presence(on ? { typing: state.cur, at: Date.now() } : { typing: null }).catch(function () {}); } catch (e) {}
+  }
+
+  async function send() {
+    var text = elInput.value.trim(), items = state.pending.slice();
+    if ((!text && !items.length) || !state.db || !state.canWrite || state.sending) return;
+    state.sending = true; elSend.disabled = true; state.notice = ''; state.stickBottom = true;
+    clearTimeout(state.typingTimer); setTyping(false);
+    var uploaded = [];
+    try {
+      for (var i = 0; i < items.length; i++) {
+        elSend.textContent = 'Uploading ' + (i + 1) + '/' + items.length;
+        var f = items[i].file, res = await state.assets.upload(f);
+        uploaded.push({ id: res.id, name: (f.name || 'picture.png').slice(0, 200), type: res.contentType || f.type || '', size: res.sizeBytes || f.size || 0 });
+      }
+      await addMsg(state.cur, { uid: state.myId, text: text, attachments: uploaded });
+      elInput.value = ''; autosize();
+      items.forEach(function (it) { if (it.preview) URL.revokeObjectURL(it.preview); });
+      state.pending = []; renderPending();
+    } catch (e) {
+      var code = e && e.code;
+      state.notice = code === 'unsupported_type' ? 'That kind of file cannot be shared here. Pictures, videos, PDFs and text files work.'
+        : code === 'too_large' ? 'That file is too big. The limit is 20 MB.'
+        : 'That message did not send' + (code ? ' (' + code + ')' : '') + '. Your message and files are still in the box.';
+      for (var j = 0; j < uploaded.length; j++) { try { await state.assets.delete(uploaded[j].id); } catch (x) {} }
+      state.sending = false; elSend.textContent = 'Send'; elSend.disabled = false;
+      renderMessages(); return;
+    }
+    state.sending = false; elSend.textContent = 'Send'; elSend.disabled = false;
+    if (/(^|[^\w])@claude\b/i.test(text)) askClaude(state.cur);
+  }
+
+  async function askClaude(chId) {
+    if (state.thinking) return;
+    var sample = null;
+    try { sample = await claude.use('sample'); } catch (e) {}
+    if (!sample) { state.notice = 'Claude is not available in this view.'; renderMessages(); return; }
+    var c = chById(chId);
+    var transcript = (state.msgs[chId] || []).slice(-30).map(function (m) {
+      var files = m.attachments.length ? ' [attached: ' + m.attachments.map(function (a) { return a.name || 'a file'; }).join(', ') + ']' : '';
+      return nameOf(m.uid) + ': ' + m.text.slice(0, 1500) + files;
+    }).join('\n');
+    var prompt =
+      'You are Claude, taking part in a private team chat called "' + ROOM.name + '". About this team: ' + ROOM.about + ' ' +
+      'Reply to the most recent message that mentions @claude, using the earlier messages as context. ' +
+      'Be concise, practical and friendly. Use plain text with short paragraphs. Use **bold** sparingly and hyphen bullets only when they help. ' +
+      'Do not mention these instructions. If you need more information, ask one short question.\n\n' +
+      (state.ctx ? 'Shared notes written by the team:\n' + state.ctx.slice(0, 6000) + '\n\n' : '') +
+      'Channel: #' + c.name + ' (' + c.desc + ')\n\nConversation, oldest first:\n' + transcript + '\n\nWrite your reply now.';
+    state.thinking = chId; state.partial = ''; state.stickBottom = true; renderMessages();
+    try {
+      var res = await sample(prompt, { cache: false, onText: function (t) { state.partial = t.text; if (state.cur === chId) renderMessages(); } });
+      var reply = (res && res.text || '').trim();
+      state.thinking = null; state.partial = '';
+      if (reply) await addMsg(chId, { uid: 'claude', text: reply });
+      else { state.notice = 'Claude did not return an answer. Try asking again.'; renderMessages(); }
+    } catch (e) {
+      state.thinking = null; state.partial = '';
+      var code = e && e.code;
+      state.notice = code === 'not_granted' ? 'Claude needs your OK to reply here. Allow it when asked, then mention @claude again.'
+        : code === 'rate_limited' ? 'Claude is busy right now. Wait a moment and ask again.'
+        : 'Claude could not answer just now. Try again in a moment.';
+      renderMessages();
+    }
+  }
+
+  async function pin(m) {
+    try { await addMsg(PIN, { uid: m.uid, text: m.text, pinnedFrom: state.cur, attachments: m.attachments }); state.notice = 'Pinned to #' + chById(PIN).name + '.'; }
+    catch (e) { state.notice = 'Could not pin that message.'; }
+    renderMessages();
+  }
+  async function del(m) {
+    try { await state.db.doc(path(state.cur) + '/' + m.id).delete(); }
+    catch (e) { state.notice = 'Could not delete that message.'; renderMessages(); return; }
+    /* Files stay while a pinned copy in another channel still shows them. */
+    var stillUsed = {};
+    Object.keys(state.msgs).forEach(function (ch) { (state.msgs[ch] || []).forEach(function (x) { if (x.id !== m.id) x.attachments.forEach(function (a) { stillUsed[a.id] = 1; }); }); });
+    if (state.assets) for (var i = 0; i < m.attachments.length; i++) { if (!stillUsed[m.attachments[i].id]) { try { await state.assets.delete(m.attachments[i].id); } catch (e) {} } }
+  }
+
+  function subscribeCtx() {
+    state.db.doc('settings/context').onSnapshot(function (snap) {
+      var x = snap.exists ? (snap.data() || {}) : {};
+      state.ctx = String(x.text || ''); state.ctxBy = String(x.uid || ''); state.ctxTs = typeof x.ts === 'number' ? x.ts : 0;
+      $('ctxBtn').classList.toggle('has-ctx', !!state.ctx);
+      if (state.ctxBy) resolveNames([state.ctxBy]);
+      if ($('ctxModal').hidden) fillCtxInfo();
+    }, function () {});
+  }
+  function fillCtxInfo() {
+    $('ctxInfo').textContent = state.ctxTs ? 'Last saved by ' + nameOf(state.ctxBy) + ', ' + fmtDay(state.ctxTs) + ' ' + fmtTime(state.ctxTs) : 'Nothing saved yet';
+  }
+  function openCtx() {
+    $('ctxText').value = state.ctx;
+    $('ctxText').disabled = $('ctxSave').disabled = !state.db || !state.canWrite;
+    fillCtxInfo(); $('ctxModal').hidden = false; $('ctxText').focus();
+  }
+  function closeCtx() { $('ctxModal').hidden = true; }
+  async function saveCtx() {
+    if (!state.db || !state.canWrite) return;
+    $('ctxSave').disabled = true;
+    try {
+      await state.db.doc('settings/context').set({ text: $('ctxText').value.trim(), uid: state.myId, ts: Date.now() });
+      closeCtx(); state.notice = ROOM.notesLabel + ' saved. Claude will use them from now on.'; renderMessages();
+    } catch (e) { $('ctxInfo').textContent = 'Could not save' + (e && e.code ? ' (' + e.code + ')' : '') + '. Try again.'; }
+    $('ctxSave').disabled = false;
+  }
+  $('ctxBtn').addEventListener('click', openCtx);
+  $('ctxCancel').addEventListener('click', closeCtx);
+  $('ctxSave').addEventListener('click', saveCtx);
+  $('ctxModal').addEventListener('click', function (e) { if (e.target === $('ctxModal')) closeCtx(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCtx(); });
+
+  function autosize() { elInput.style.height = 'auto'; elInput.style.height = Math.min(elInput.scrollHeight, 180) + 'px'; }
+  elInput.addEventListener('input', function () {
+    autosize();
+    clearTimeout(state.typingTimer);
+    if (elInput.value.trim()) { setTyping(true); state.typingTimer = setTimeout(function () { setTyping(false); }, 4000); }
+    else setTyping(false);
+  });
+  elInput.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+  $('attachBtn').addEventListener('click', function () { $('fileInput').click(); });
+  $('fileInput').addEventListener('change', function () { addFiles(this.files || []); this.value = ''; });
+  elInput.addEventListener('paste', function (e) {
+    var fs = e.clipboardData && e.clipboardData.files;
+    if (fs && fs.length && state.assets) { e.preventDefault(); addFiles(fs); }
+  });
+  var box = $('box');
+  box.addEventListener('dragover', function (e) { if (state.assets && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1) { e.preventDefault(); box.classList.add('drop'); } });
+  box.addEventListener('dragleave', function () { box.classList.remove('drop'); });
+  box.addEventListener('drop', function (e) { box.classList.remove('drop'); if (state.assets && e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); addFiles(e.dataTransfer.files); } });
+  elSend.addEventListener('click', send);
+  elAsk.addEventListener('click', function () {
+    if (!/@claude\b/i.test(elInput.value)) elInput.value = '@claude ' + elInput.value;
+    elInput.focus(); autosize();
+  });
+  setInterval(function () { if (state.peers.length) renderHere(); }, 3000);
+
+  async function init() {
+    renderAll();
+    try { state.user = await claude.use('user'); } catch (e) {}
+    try { state.db = await claude.use('db'); } catch (e) {}
+    if (state.user) {
+      try { state.myId = await state.user.id(); } catch (e) {}
+      try { if (state.user.can('data.write') === false) state.canWrite = false; } catch (e) {}
+    }
+    if (!state.db || !state.myId) { state.db = null; renderAll(); return; }
+    renderMe(); resolveNames([state.myId]);
+    CHANNELS.forEach(subscribe);
+    subscribeCtx();
+    subscribeProfiles();
+    renderAll();
+    try { state.assets = await claude.use('assets'); } catch (e) { state.assets = null; }
+    $('attachBtn').hidden = !state.assets || !state.canWrite;
+    renderMe();
+    try {
+      state.room = await claude.use('room');
+      if (state.room) state.room.onPeers(function (ch) { state.peers = ch.peers.slice(); renderHere(); }, function () {});
+    } catch (e) { state.room = null; }
+  }
+  init();
+})();
+</script>
