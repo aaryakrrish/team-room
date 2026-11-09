@@ -1,26 +1,39 @@
 # team-room
 
-A Claude Code skill that sets up a private team chat with Claude built in. It's like a small Slack, and you don't need Slack or an Enterprise plan, just a Claude account.
+**A private team chat with Claude built in.** It's like a small Slack, and you don't need Slack or an Enterprise plan, just a Claude account. Ask Claude Code to make a room, share the link with your team, and type **@claude** in any channel to bring Claude into the conversation.
 
-Each room is a private page on claude.ai with:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/team-room-dark.png">
+  <img src="docs/team-room-light.png" alt="A team-room chat: channels on the left, messages with reactions and a PDF attachment, and Claude replying with a to-do list for the team." width="100%">
+</picture>
 
-- channels, unread counts and pinned decisions
-- emoji reactions and a smiley picker
-- file and picture sharing (paperclip, paste or drag)
-- profile photos
-- who's online and who's typing
-- shared notes that Claude reads
-- **@claude** in any channel to bring Claude into the conversation
+<sub>An example room with made-up people.</sub>
+
+## What you get
+
+- **Channels** with unread counts, plus a #decisions channel you can pin messages to
+- **@claude in any channel.** Claude reads the recent conversation and your shared notes, then replies in the chat
+- **Reactions** and a smiley picker
+- **Files and pictures:** use the paperclip, paste a screenshot, or drag files in
+- **Profile photos**, **who's online** and **who's typing**
+- **Shared notes** that the whole team edits and Claude reads
+- Light and dark mode, and it works on phones
 
 ## Install
 
-Run this once in a terminal:
+In Claude Code, run:
 
-```bash
-git clone https://github.com/aaryakrrish/team-room ~/.claude/skills/team-room
+```
+/plugin marketplace add aaryakrrish/team-room
+/plugin install team-room@team-room
 ```
 
-No git? Download the [zip](https://github.com/aaryakrrish/team-room/archive/refs/heads/main.zip), unzip it, rename the folder to `team-room` and move it into `~/.claude/skills/`.
+<details>
+<summary>Install without the plugin command</summary>
+
+Download the [zip](https://github.com/aaryakrrish/team-room/archive/refs/heads/main.zip), unzip it, and copy the folder `plugins/team-room/skills/team-room` into `~/.claude/skills/`. Create the `skills` folder if it isn't there.
+
+</details>
 
 ## Use
 
@@ -28,18 +41,27 @@ Open Claude Code and say:
 
 > make a team chat room
 
-Claude asks for a room name and channels, then gives you a private link. Open the room and click **Share** to invite your team. Everyone needs to be signed in to Claude.
+Claude asks for a room name, what your team works on, and the channels you want. Then it gives you a private link. Open the room and click **Share** to invite your team.
 
-From Claude Code you can also say things like "read #general in my room", "post this to the room as Claude" or "update the room notes".
+You can also use a room from Claude Code:
+
+- "read #general in my room"
+- "post this to the room as Claude"
+- "update the room's shared notes"
 
 ## Good to know
 
-- An @claude reply runs on the account of the person who asked, after they allow it the first time.
-- Pictures, videos, PDFs and text files work, up to 20 MB each.
-- Anyone who can post in a room can delete messages, so only invite people you trust.
+- **Each person uses their own Claude.** An @claude reply runs on the account of the person who asked, after they allow it the first time.
+- **Everyone needs to be signed in to Claude** to open the room.
+- **Files:** pictures, videos, PDFs and text files, up to 20 MB each. Files uploaded by people who can't edit the room show only to people in the room owner's organization.
+- **Only invite people you trust.** Anyone who can post can also delete messages.
 
 ## Update
 
-```bash
-git -C ~/.claude/skills/team-room pull
 ```
+/plugin marketplace update team-room
+```
+
+## License
+
+MIT

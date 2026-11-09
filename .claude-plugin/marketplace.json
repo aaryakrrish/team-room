@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "team-room",
+  "description": "A private team chat with Claude built in, set up from Claude Code.",
+  "owner": {
+    "name": "aaryakrrish",
+    "url": "https://github.com/aaryakrrish"
+  },
+  "plugins": [
+    {
+      "name": "team-room",
+      "description": "Set up a private team chat with Claude built in: channels, reactions, file and picture sharing, profile photos, shared notes and @claude replies. No Slack or Enterprise plan needed.",
+      "source": "./plugins/team-room",
+      "category": "productivity"
+    }
+  ]
+}

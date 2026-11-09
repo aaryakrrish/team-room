@@ -1,0 +1,11 @@
+{
+  "name": "team-room",
+  "version": "1.0.0",
+  "description": "Set up a private team chat with Claude built in: channels, reactions, file and picture sharing, profile photos, shared notes and @claude replies.",
+  "author": {
+    "name": "aaryakrrish",
+    "url": "https://github.com/aaryakrrish"
+  },
+  "license": "MIT",
+  "keywords": ["chat", "team", "slack-alternative", "collaboration", "artifact", "claude-code"]
+}
