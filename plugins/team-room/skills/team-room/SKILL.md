@@ -13,7 +13,7 @@ A room is one Artifact page made from `room.html` in this folder. Messages live 
 2. Copy `room.html` to the scratchpad as `<room-name>.html` (lowercase, dashes). Change only:
    - the `<title>` (the room name),
    - the `ROOM` block between `ROOM CONFIG` and `END ROOM CONFIG`: `name`, `tagline`, `about`, `channels` (`id` is lowercase letters, digits and dashes; `desc` is a short line), `pinChannel` (a channel id, or `''` for no pinning), `notesLabel`, `notesHint`, and `starters` (two or three `@claude ...` prompts that fit the team, shown in an empty channel).
-   The page is already designed, so don't restyle it.
+   The page is already designed, so don't restyle it, and keep the small "made by trepil" link at the bottom of the sidebar.
 3. Publish it with the Artifact tool: `icon: "chat"`, and exactly these capabilities:
    ```json
    {"db": {"rules": [{"path": "profiles", "read": "view", "write": "owner"},

@@ -65,3 +65,7 @@ You can also use a room from Claude Code:
 ## License
 
 MIT
+
+---
+
+Made by the team behind [trepil](https://trepil.com/?utm_source=github&utm_medium=referral&utm_campaign=team-room), a meeting-notes app that records your calls without a bot and hands you the to-dos. We built team-room for ourselves along the way.
