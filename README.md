@@ -17,6 +17,8 @@
 - **Files and pictures:** use the paperclip, paste a screenshot, or drag files in
 - **Profile photos**, **who's online** and **who's typing**
 - **Shared notes** that the whole team edits and Claude reads
+- **Delete your own messages** and the Claude replies you asked for
+- **Rename the room** from inside it: click the name at the top left
 - Light and dark mode, and it works on phones
 
 ## Install
@@ -41,7 +43,7 @@ Open Claude Code and say:
 
 > make a team chat room
 
-Claude asks for a room name, what your team works on, and the channels you want. Then it gives you a private link. Open the room and click **Share** to invite your team.
+Claude makes the room straight away and gives you a private link. It names the room after your project, or whatever you mention ("make a team chat for the Acme launch"). To change the name later, click it at the top left of the room. Open the room and click **Share** to invite your team.
 
 You can also use a room from Claude Code:
 
@@ -54,7 +56,7 @@ You can also use a room from Claude Code:
 - **Each person uses their own Claude.** An @claude reply runs on the account of the person who asked, after they allow it the first time.
 - **Everyone needs to be signed in to Claude** to open the room.
 - **Files:** pictures, videos, PDFs and text files, up to 20 MB each. Files uploaded by people who can't edit the room show only to people in the room owner's organization.
-- **Only invite people you trust.** Anyone who can post can also delete messages.
+- **Only invite people you trust.** The room only shows a Delete button on your own messages, but anyone who can post could still delete messages through the room's database.
 
 ## Update
 

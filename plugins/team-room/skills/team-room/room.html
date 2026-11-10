@@ -45,7 +45,12 @@
 
   /* Rail */
   aside { width: 252px; flex: none; background: var(--rail); color: var(--rail-text); display: flex; flex-direction: column; padding: 18px 10px 14px; gap: 2px; }
-  .brand { display: flex; gap: 10px; align-items: center; padding: 0 8px 16px; }
+  .brand { display: flex; gap: 10px; align-items: center; padding: 6px 8px; margin: -6px 0 10px; width: 100%; text-align: left; background: none; border: 0; color: inherit; border-radius: 10px; font: inherit; }
+  button.brand:not(:disabled) { cursor: pointer; transition: background .15s; }
+  button.brand:not(:disabled):hover { background: var(--rail-2); }
+  .brand .edit { margin-left: auto; flex: none; opacity: 0; font-size: 13px; transition: opacity .15s; }
+  button.brand:not(:disabled):hover .edit, button.brand:focus-visible .edit { opacity: .7; }
+  button.brand:disabled .edit { display: none; }
   .logo { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; color: var(--accent-ink); background: var(--accent); font-size: 16px; }
   .brand-text { min-width: 0; }
   .brand-name { font-family: var(--f-display); font-weight: 700; font-size: 17px; color: var(--rail-strong); letter-spacing: -.01em; line-height: 1.2; }
@@ -185,11 +190,13 @@
   .btn.send:hover { filter: brightness(1.08); }
   .btn:disabled, textarea:disabled { opacity: .5; cursor: not-allowed; }
 
-  #ctxModal { position: fixed; inset: 0; background: rgba(10,14,19,.5); z-index: 10; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #ctxModal, #nameModal { position: fixed; inset: 0; background: rgba(10,14,19,.5); z-index: 10; display: flex; align-items: center; justify-content: center; padding: 16px; }
   .modal { background: var(--panel); color: var(--text); border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column; padding: 22px; box-shadow: var(--shadow); }
   .modal h2 { margin: 0 0 4px; font-family: var(--f-display); font-size: 20px; }
   .modal p { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; }
   .modal textarea { border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-height: 280px; max-height: none; flex: 1; resize: vertical; font-size: 14px; background: var(--bg); }
+  .modal label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 4px; }
+  .modal input[type=text] { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14px; background: var(--bg); color: var(--text); }
   .modal .row { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
   .modal .row .info { margin-right: auto; color: var(--muted); font-size: 12px; }
 
@@ -216,7 +223,7 @@
 
 <div id="app">
   <aside>
-    <div class="brand"><div class="logo" id="logo"></div><div class="brand-text"><div class="brand-name" id="roomName"></div><div class="brand-tag" id="roomTag"></div></div></div>
+    <button class="brand" id="brandBtn" type="button" title="Rename this room" disabled><div class="logo" id="logo"></div><div class="brand-text"><div class="brand-name" id="roomName"></div><div class="brand-tag" id="roomTag"></div></div><span class="edit" aria-hidden="true">&#9998;</span></button>
     <div class="sect">Channels</div>
     <nav id="chs"></nav>
     <div class="sect">Shared</div>
@@ -234,6 +241,21 @@
         <span class="info" id="ctxInfo"></span>
         <button class="btn" id="ctxCancel" type="button">Close</button>
         <button class="btn send" id="ctxSave" type="button">Save notes</button>
+      </div>
+    </div>
+  </div>
+  <div id="nameModal" role="dialog" aria-modal="true" aria-labelledby="nameTitle" hidden>
+    <div class="modal" style="max-width:460px">
+      <h2 id="nameTitle">Rename this room</h2>
+      <p>Everyone in the room sees the new name right away.</p>
+      <label for="nameInput">Room name</label>
+      <input type="text" id="nameInput" maxlength="60" autocomplete="off">
+      <label for="tagInput">Short description</label>
+      <input type="text" id="tagInput" maxlength="120" autocomplete="off">
+      <div class="row">
+        <span class="info" id="nameInfo"></span>
+        <button class="btn" id="nameCancel" type="button">Cancel</button>
+        <button class="btn send" id="nameSave" type="button">Save</button>
       </div>
     </div>
   </div>
@@ -298,8 +320,12 @@ var ROOM = {
 
   var $ = function (id) { return document.getElementById(id); };
   var elChs = $('chs'), elMsgs = $('msgs'), elInput = $('input'), elSend = $('send'), elAsk = $('ask');
-  $('roomName').textContent = ROOM.name; $('roomTag').textContent = ROOM.tagline;
-  $('logo').textContent = (ROOM.name.trim().charAt(0) || 'R').toUpperCase();
+  state.roomName = ROOM.name; state.roomTag = ROOM.tagline;
+  function applyName() {
+    $('roomName').textContent = state.roomName; $('roomTag').textContent = state.roomTag;
+    $('logo').textContent = (state.roomName.trim().charAt(0) || 'R').toUpperCase();
+  }
+  applyName();
   $('ctxLabel').textContent = ROOM.notesLabel; $('ctxTitle').textContent = ROOM.notesLabel; $('ctxHint').textContent = ROOM.notesHint;
   elAsk.innerHTML = SPARK + '<span>Ask Claude</span>';
 
@@ -383,7 +409,7 @@ var ROOM = {
       b.addEventListener('click', function () { switchTo(c.id); });
       elChs.appendChild(b);
     });
-    document.title = (total ? '(' + total + ') ' : '') + ROOM.name;
+    document.title = (total ? '(' + total + ') ' : '') + state.roomName;
   }
 
   function useStarter(t) { elInput.value = t; autosize(); elInput.focus(); }
@@ -532,7 +558,7 @@ var ROOM = {
         p.addEventListener('click', function () { pin(m); });
         act.appendChild(p);
       }
-      if (m.uid === state.myId && state.canWrite) {
+      if (canDelete(m)) {
         var d = mk('button', 'del', 'Delete'); d.type = 'button';
         d.addEventListener('click', function () { del(m); });
         act.appendChild(d);
@@ -692,7 +718,7 @@ var ROOM = {
         if (!first && !old[d.id]) state.fresh[d.id] = 1;
         var atts = Array.isArray(x.attachments) ? x.attachments.filter(function (a) { return a && typeof a.id === 'string' && /^[0-9a-f]{32}$/.test(a.id); })
           .map(function (a) { return { id: a.id, name: String(a.name || '').slice(0, 200), type: String(a.type || ''), size: typeof a.size === 'number' ? a.size : 0 }; }) : [];
-        arr.push({ id: d.id, uid: String(x.uid || ''), text: String(x.text || ''), ts: x.ts, pinnedFrom: x.pinnedFrom || '', attachments: atts, reactions: x.reactions && typeof x.reactions === 'object' ? x.reactions : {} });
+        arr.push({ id: d.id, uid: String(x.uid || ''), text: String(x.text || ''), ts: x.ts, pinnedFrom: x.pinnedFrom || '', askedBy: String(x.askedBy || ''), attachments: atts, reactions: x.reactions && typeof x.reactions === 'object' ? x.reactions : {} });
       });
       first = false;
       arr.reverse();
@@ -712,6 +738,7 @@ var ROOM = {
   async function addMsg(chId, data) {
     var doc = { uid: data.uid, text: data.text, ts: Date.now() };
     if (data.pinnedFrom) doc.pinnedFrom = data.pinnedFrom;
+    if (data.askedBy) doc.askedBy = data.askedBy;
     if (data.attachments && data.attachments.length) doc.attachments = data.attachments;
     await state.db.collection(path(chId)).add(doc);
   }
@@ -788,7 +815,7 @@ var ROOM = {
       return nameOf(m.uid) + ': ' + m.text.slice(0, 1500) + files;
     }).join('\n');
     var prompt =
-      'You are Claude, taking part in a private team chat called "' + ROOM.name + '". About this team: ' + ROOM.about + ' ' +
+      'You are Claude, taking part in a private team chat called "' + state.roomName + '". About this team: ' + ROOM.about + ' ' +
       'Reply to the most recent message that mentions @claude, using the earlier messages as context. ' +
       'Be concise, practical and friendly. Use plain text with short paragraphs. Use **bold** sparingly and hyphen bullets only when they help. ' +
       'Do not mention these instructions. If you need more information, ask one short question.\n\n' +
@@ -799,7 +826,7 @@ var ROOM = {
       var res = await sample(prompt, { cache: false, onText: function (t) { state.partial = t.text; if (state.cur === chId) renderMessages(); } });
       var reply = (res && res.text || '').trim();
       state.thinking = null; state.partial = '';
-      if (reply) await addMsg(chId, { uid: 'claude', text: reply });
+      if (reply) await addMsg(chId, { uid: 'claude', text: reply, askedBy: state.myId });
       else { state.notice = 'Claude did not return an answer. Try asking again.'; renderMessages(); }
     } catch (e) {
       state.thinking = null; state.partial = '';
@@ -812,9 +839,15 @@ var ROOM = {
   }
 
   async function pin(m) {
-    try { await addMsg(PIN, { uid: m.uid, text: m.text, pinnedFrom: state.cur, attachments: m.attachments }); state.notice = 'Pinned to #' + chById(PIN).name + '.'; }
+    try { await addMsg(PIN, { uid: m.uid, text: m.text, pinnedFrom: state.cur, attachments: m.attachments, askedBy: m.askedBy }); state.notice = 'Pinned to #' + chById(PIN).name + '.'; }
     catch (e) { state.notice = 'Could not pin that message.'; }
     renderMessages();
+  }
+  /* You can delete your own messages and the Claude replies you asked for. Older Claude replies, saved before askedBy existed, anyone who can post may delete. */
+  function canDelete(m) {
+    if (!state.canWrite || !state.myId) return false;
+    if (m.uid === state.myId) return true;
+    return m.uid === 'claude' && (!m.askedBy || m.askedBy === state.myId);
   }
   async function del(m) {
     try { await state.db.doc(path(state.cur) + '/' + m.id).delete(); }
@@ -824,6 +857,39 @@ var ROOM = {
     Object.keys(state.msgs).forEach(function (ch) { (state.msgs[ch] || []).forEach(function (x) { if (x.id !== m.id) x.attachments.forEach(function (a) { stillUsed[a.id] = 1; }); }); });
     if (state.assets) for (var i = 0; i < m.attachments.length; i++) { if (!stillUsed[m.attachments[i].id]) { try { await state.assets.delete(m.attachments[i].id); } catch (e) {} } }
   }
+
+  /* The room's name and description live in settings/room, so anyone who can post can rename it. */
+  function subscribeName() {
+    state.db.doc('settings/room').onSnapshot(function (snap) {
+      var x = snap.exists ? (snap.data() || {}) : {};
+      var n = String(x.name || '').trim().slice(0, 60), t = String(x.tagline || '').trim().slice(0, 120);
+      state.roomName = n || ROOM.name; state.roomTag = n ? t : ROOM.tagline;
+      applyName(); renderChannels();
+    }, function () {});
+  }
+  function openName() {
+    if (!state.db || !state.canWrite) return;
+    $('nameInput').value = state.roomName; $('tagInput').value = state.roomTag; $('nameInfo').textContent = '';
+    $('nameModal').hidden = false; $('nameInput').focus(); $('nameInput').select();
+  }
+  function closeName() { $('nameModal').hidden = true; }
+  async function saveName() {
+    var n = $('nameInput').value.trim(), t = $('tagInput').value.trim();
+    if (!n) { $('nameInfo').textContent = 'Give the room a name.'; $('nameInput').focus(); return; }
+    $('nameSave').disabled = true;
+    try {
+      await state.db.doc('settings/room').set({ name: n, tagline: t, uid: state.myId, ts: Date.now() });
+      closeName(); state.notice = 'Room renamed to ' + n + '.'; renderMessages();
+    } catch (e) { $('nameInfo').textContent = 'Could not save' + (e && e.code ? ' (' + e.code + ')' : '') + '. Try again.'; }
+    $('nameSave').disabled = false;
+  }
+  $('brandBtn').addEventListener('click', openName);
+  $('nameCancel').addEventListener('click', closeName);
+  $('nameSave').addEventListener('click', saveName);
+  $('nameInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); saveName(); } });
+  $('tagInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); saveName(); } });
+  $('nameModal').addEventListener('click', function (e) { if (e.target === $('nameModal')) closeName(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeName(); });
 
   function subscribeCtx() {
     state.db.doc('settings/context').onSnapshot(function (snap) {
@@ -894,7 +960,8 @@ var ROOM = {
     if (!state.db || !state.myId) { state.db = null; renderAll(); return; }
     renderMe(); resolveNames([state.myId]);
     CHANNELS.forEach(subscribe);
-    subscribeCtx();
+    subscribeCtx(); subscribeName();
+    $('brandBtn').disabled = !state.canWrite;
     subscribeProfiles();
     renderAll();
     try { state.assets = await claude.use('assets'); } catch (e) { state.assets = null; }
